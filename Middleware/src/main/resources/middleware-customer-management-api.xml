@@ -13,45 +13,95 @@
 
 	<!-- CHANNEL -->
 	<int:channel id="customerInputChannel" />
+	<int:channel id="postTransformationChannel" />
+	<int:channel id="agressionOutputChannel" />
 	<int:channel id="splittedCustomerChannel" />
 	<int:channel id="customerDetailsChannel" />
 	<int:channel id="productDetailsChannel" />
+	<int:channel id="customerAggressionChannel" />
 	<int:channel id="customerOutputChannel">
 		<int:queue capacity='10' />
 	</int:channel>
-	
+	<int:channel id="testContentChannel" />
+
 	<!-- Splitter -->
-	<int:splitter ref="customerSplitter" input-channel="customerInputChannel"
+	<int:splitter ref="customerSplitter"
+		input-channel="customerInputChannel"
 		output-channel="splittedCustomerChannel" />
-	
+
 	<!-- Router -->
 	<int:recipient-list-router id="router"
 		input-channel="splittedCustomerChannel">
 		<int:recipient channel="customerDetailsChannel" />
 		<int:recipient channel="productDetailsChannel" />
 	</int:recipient-list-router>
-	
-	<!--  http outbound gateway to invoke customer information management rest service -->
-		
-	<int-http:outbound-gateway
-		id="customerGatewayOutbound"
-		request-channel="customerDetailsChannel"
-		url="http://localhost:8082/custsvc/customer/{custId}"
-		http-method="GET" reply-channel="customerOutputChannel"
-		expected-response-type="com.springboot.dummy.middleware.model.Customer">
-		<int-http:uri-variable name="custId"
-			expression="payload" />
-	</int-http:outbound-gateway>
-	
-	<!--  http outbound gateway to invoke product catalogue rest service -->
-	 <int-http:outbound-gateway
-		id="prodcatGatewayOutbound"
-		request-channel="productDetailsChannel"
-		url="http://localhost:8081/prodsvc/productList/{custId}"
-		http-method="GET" reply-channel="customerOutputChannel"
-		expected-response-type="java.lang.String">
-		<int-http:uri-variable name="custId"
-			expression="payload" />
-	</int-http:outbound-gateway>
+
+	<!-- http outbound gateway to invoke customer information management rest 
+		service -->
+
+	<int:chain input-channel="customerDetailsChannel"
+		output-channel="customerAggressionChannel">
+
+		<int:header-enricher id="enricher1">
+			<int:correlation-id expression="payload"
+				overwrite="true" />
+		</int:header-enricher>
+
+		<int-http:outbound-gateway
+			id="customerGatewayOutbound"
+			url="http://localhost:8082/custsvc/customer/{custId}"
+			http-method="GET" expected-response-type="java.lang.String">
+			<int-http:uri-variable name="custId"
+				expression="payload" />
+		</int-http:outbound-gateway>
+
+		<int:json-to-object-transformer
+			type="com.springboot.dummy.middleware.model.Customer" />
+
+	</int:chain>
+
+
+	<!-- http outbound gateway to invoke product catalogue rest service -->
+
+	<int:chain input-channel="productDetailsChannel"
+		output-channel="customerAggressionChannel">
+
+		<int:header-enricher id="enricher2">
+			<int:correlation-id expression="payload"
+				overwrite="true" />
+		</int:header-enricher>
+
+		<int-http:outbound-gateway
+			id="prodcatGatewayOutbound"
+			url="http://localhost:8081/prodsvc/productList/{custId}"
+			http-method="GET" expected-response-type="java.lang.String">
+			<int-http:uri-variable name="custId"
+				expression="payload" />
+		</int-http:outbound-gateway>
+
+		<!-- <int:transformer id="prodToGenProduct" ref="customTransformer" method="toGenProducts"/> -->
+
+		<int:json-to-object-transformer
+			type="com.springboot.dummy.middleware.model.Product[]" />
+
+	</int:chain>
+
+	<int:aggregator id="customerAggregator"
+		input-channel="customerAggressionChannel"
+		output-channel="testContentChannel"
+		release-strategy-expression="size() ==2"
+		expire-groups-upon-completion="true" />
+
+	<int:transformer id="customerDetailsTransformer"
+		ref="customerTransformer" method="toCustomerDetails"
+		input-channel="agressionOutputChannel"
+		output-channel="postTransformationChannel" />
+
+	<int:aggregator id="allCustomerAggregator"
+		input-channel="postTransformationChannel"
+		output-channel="customerOutputChannel"
+		correlation-strategy-expression="payload.getClass().getName()"
+		release-strategy-expression="size() ==2" 
+		expire-groups-upon-completion="true" />
 
 </beans>

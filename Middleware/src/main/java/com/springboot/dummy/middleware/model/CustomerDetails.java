@@ -36,4 +36,9 @@ public class CustomerDetails {
 		this.productList = productList;
 	}
 
+	@Override
+	public String toString() {
+		return "CustomerDetails [custId=" + custId + ", customer=" + customer + ", productList=" + productList + "]";
+	}
+
 }

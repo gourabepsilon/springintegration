@@ -19,26 +19,35 @@ import com.springboot.dummy.middleware.model.CustomerDetails;
 @RestController
 @RequestMapping("api/customerMgmt")
 public class CustomerManagementApi {
-	
+
 	@Autowired
 	@Qualifier("customerInputChannel")
 	private MessageChannel customerInputChannel;
-	
+
 	@Autowired
 	@Qualifier("customerOutputChannel")
 	private PollableChannel customerOutputChannel;
-	
+
 	public CustomerManagementApi() {
 
 	}
 
 	@GetMapping("/customer/{msisdnList}")
 	public List<CustomerDetails> getCustomerDetails(@PathVariable(value = "msisdnList") final String msisdnList) {
-		
+
 		Message<String> message = MessageBuilder.withPayload(msisdnList).build();
+		System.out.println("Sending to channel");
 		customerInputChannel.send(message);
-		
-		return new ArrayList<CustomerDetails>();
+		System.out.println("Sent to channel");
+
+		Message<?> m = customerOutputChannel.receive();
+		System.out.println("CorrelationId " + m.getHeaders().get("correlationId"));
+		System.out.println("Payload " + m.getPayload().getClass().getName());
+
+		@SuppressWarnings("unchecked")
+		ArrayList<CustomerDetails> custDetailsList = (ArrayList<CustomerDetails>) m.getPayload();
+
+		return custDetailsList;
 	}
 
 }
