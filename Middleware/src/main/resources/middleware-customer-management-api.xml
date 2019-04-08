@@ -88,7 +88,7 @@
 
 	<int:aggregator id="customerAggregator"
 		input-channel="customerAggressionChannel"
-		output-channel="testContentChannel"
+		output-channel="agressionOutputChannel"
 		release-strategy-expression="size() ==2"
 		expire-groups-upon-completion="true" />
 
@@ -101,7 +101,6 @@
 		input-channel="postTransformationChannel"
 		output-channel="customerOutputChannel"
 		correlation-strategy-expression="payload.getClass().getName()"
-		release-strategy-expression="size() ==2" 
 		expire-groups-upon-completion="true" />
 
 </beans>

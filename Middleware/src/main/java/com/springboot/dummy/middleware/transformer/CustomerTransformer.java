@@ -14,9 +14,9 @@ import com.springboot.dummy.middleware.model.Product;
 public class CustomerTransformer {
 
 	public CustomerDetails toCustomerDetails(Message<?> message) {
-
+		
 		System.out.println("Start forming CustomerDetails");
-
+				
 		CustomerDetails customerDetails = new CustomerDetails();
 
 		@SuppressWarnings("unchecked")

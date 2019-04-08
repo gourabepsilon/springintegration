@@ -1,6 +1,5 @@
 package com.springboot.dummy.middleware.service;
 
-import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +10,7 @@ public class TestChannelContent {
 		
 	}
 	
-	@ServiceActivator(inputChannel="testContentChannel", outputChannel="agressionOutputChannel")
+	//@ServiceActivator(inputChannel="testContentChannel", outputChannel="agressionOutputChannel")
 	public Message<?> testContent(Message<?> msg) {
 			
 		System.out.println("************ Start of Service Activator ************");
